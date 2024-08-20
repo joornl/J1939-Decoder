@@ -5,15 +5,15 @@ J1939 messages. Simply running the script "jjd.py" without any arguments will
 display the syntax and usage examples.
 
 
-DEPENDENCIES
+## DEPENDENCIES
     In order to use these scripts one has to purchase/acquire the 
     "J1939 Digital Annex" spreadsheet files from SAE (Society of Automotive 
     Engineers). The .xlsx file used for the development of these scripts is: 
     J1939DA Oct22.xlsx
 
 
-USAGE INSTRUCTIONS
-Step 1:
+## USAGE INSTRUCTIONS
+### Step 1:
     The "J1939 Digital Annex" spreadsheet used ("J1939DA Oct22.xlsx") had 17 
     sheets. Of them, the following sheets were exported as tab separated values
     (Note: tab separated values, not comma separated values) using LibreOffice 
@@ -27,27 +27,26 @@ Step 1:
       (2) j1939da-source-global-sa-oct22.tsv (file size: 16861 bytes)
       (3) j1939da-source-add-hwy-oct22.tsv (file size: 7805 bytes)
 
-Step 2:
+## Step 2:
 
     The next step is to build the SQLite3 database. Use the following commands 
     as a guide. First, create the database with the SPs & PGs sheet like so:
-      `$ ./j1939-pgn-spn-ingest.py j1939da-pgn-spn-oct22.tsv`
+      $ ./j1939-pgn-spn-ingest.py j1939da-pgn-spn-oct22.tsv
 
     Add information from the global source addresses sheet to the created 
     database like so:
-      `$ ./j1939-source-add-ingest.py -d j1939da-pgn-spn-oct22.db j1939da-source-global-sa-oct22.tsv`
+      $ ./j1939-source-add-ingest.py -d j1939da-pgn-spn-oct22.db j1939da-source-global-sa-oct22.tsv
 
     Next, add the source addresses for highway equipment like so:
-      `$ ./j1939-source-add-ingest.py -d j1939da-pgn-spn-oct22.db j1939da-source-add-hwy-oct22.tsv`
+      $ ./j1939-source-add-ingest.py -d j1939da-pgn-spn-oct22.db j1939da-source-add-hwy-oct22.tsv
 
-Step 3: (Optional)
+## Step 3: (Optional)
     In the jjd.py script, right at the top, in a section labeled "Globals", the
     location of the SQLite3 database is specified. Adjust that, if required, so 
     that jjd.py may be invoked without having to supply the "-d" flag.
 
-Step 4:
-    jjd.py is ready for use now. Simply running like so:
+## Step 4:
+jjd.py is ready for use now. Simply running like so:
       `$ ./jjd.py`
-
-    will display syntax and examples of usage.
+will display syntax and examples of usage.
 
