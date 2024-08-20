@@ -1,7 +1,4 @@
 # J1939-Decoder
-===============================================================================
-                        README FILE FOR J1939 DECODER
-===============================================================================
 
 The J1939 Decoder package is a set of scripts that will allow one to decode 
 J1939 messages. Simply running the script "jjd.py" without any arguments will 
