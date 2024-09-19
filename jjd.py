@@ -9,7 +9,7 @@ import sqlite3
 # Globals
 #
 DB_FILE="j1939da-pgn-spn-oct22.db"
-VERSION="20240725.00"
+VERSION="20240919.00"
 
 #
 # Subroutines
@@ -249,6 +249,7 @@ def dispSPNInfo(dbcon, pgn_num, spn_num):
         + "bit_start, "\
         + "scale_factor, "\
         + "offset, "\
+        + "transmission_rate, "\
         + "description "\
       + "FROM "\
         + "spn "\
@@ -264,8 +265,10 @@ def dispSPNInfo(dbcon, pgn_num, spn_num):
         print("%14s: %s" % ("Bit Start", i[5]))
         print("%14s: %s" % ("Scale Factor", i[6]))
         print("%14s: %s\n" % ("Offset", i[7]))
+        print("%s:" % ("Transmission Rate",))
+        print("  %s\n" % (i[8],))
         print("%s:" % ("Description",))
-        print("%s" % (i[8].strip('"')))
+        print("  %s" % (i[9].strip('"')))
 
     # Close DB cursor
     dbcur.close()

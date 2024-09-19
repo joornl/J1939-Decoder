@@ -9,13 +9,14 @@ import sqlite3
 # Definitions
 #
 NUM_FLDS = 46
-REQD_FLD_IDX_L = [4, 5, 6, 7, 20, 21, 22, 23, 24, 29, 34, 35]
+#x REQD_FLD_IDX_L = [4, 5, 6, 7, 20, 21, 22, 23, 24, 29, 34, 35]
 PGN_FLD_MAP = {
   "pgn": 4,
   "label": 5,
   "acronym": 6,
   "description": 7}
 SPN_FLD_MAP = {
+  "transmission_rate": 15,
   "sp_start_bit": 20,
   "spn": 21,
   "label": 22,
@@ -201,10 +202,11 @@ def procLine(line, dbcon):
         + "unit, "\
         + "scale_factor, "\
         + "offset, "\
+        + "transmission_rate, "\
         + "description"\
       + ") "\
       + "VALUES "\
-        + "(?, (SELECT pgn_id FROM pgn WHERE pgn = ?), ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        + "(?, (SELECT pgn_id FROM pgn WHERE pgn = ?), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 
     try:
         cur.execute(q, (flds_l[SPN_FLD_MAP["spn"]], 
@@ -217,6 +219,7 @@ def procLine(line, dbcon):
                         flds_l[SPN_FLD_MAP["unit"]], 
                         flds_l[SPN_FLD_MAP["scale_factor"]], 
                         flds_l[SPN_FLD_MAP["offset"]], 
+                        flds_l[SPN_FLD_MAP["transmission_rate"]], 
                         flds_l[SPN_FLD_MAP["description"]]))
         dbcon.commit()
     except sqlite3.DatabaseError as e:
@@ -254,6 +257,7 @@ def createTables(dbcon):
         + "scale_factor FLOAT, "\
         + "offset FLOAT, "\
         + "label TEXT, "\
+        + "transmission_rate TEXT, "\
         + "description TEXT"\
       + ")"
 
