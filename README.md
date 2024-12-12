@@ -51,10 +51,8 @@ jjd.py is ready for use now. Simply running like so:
 will display syntax and examples of usage.
 
 
-\
-\
 ---
-\
+
 # CAN ID Decoder
 Give a CAN ID, like 0C0A002A, the `jcd.py` script will decode that ID into comma-separated values, one line for each SPN, like so:
 
