@@ -18,12 +18,13 @@ def usage():
     print("""
 Usage (Version: """ + VERSION + """):
   """ + os.path.basename(sys.argv[0]) + """ [-d <sqlite3 DB file>] [-i -|<file>] [-p <pgn>] \
-[-s <spn>] [-a <src add>] [CAN message]
+[-s <spn>] [-a <src add>] [-f csv] [CAN message]
 
 Flags:
   -a = Source address (as integer or hexadecimal with leading 0x)
   -d = Location of SQLite3 DB file (default: j1939da-pgn-spn-oct22.db in same 
        directory as this script)
+  -f = Output format (currently, only CSV supported)
   -i = Input file containing raw CAN messages, or read from 
        STDIN if argument is \"-\"
   -p = PGN number (as integer or hexadecimal with leading 0x)
@@ -49,12 +50,13 @@ Example usage:
   """)
 
 
-def procLine(line, dbcon):
+def procLine(line, dbcon, oformat):
     can_id = None
     can_data = None
     dest_add = None
     dest = None
     prg_nm = sys.argv[0]
+    has_time = False
 
     # Sample line:
     #  can0  18FEF121   [8]  C7 FF FF C3 00 FF FF F0
@@ -63,7 +65,7 @@ def procLine(line, dbcon):
     #
     # Guess the format
     regx1 = re.compile("\s*can\d+\s+(\w+)\s+\[\d+\]\s+(.*)")
-    regx2 = re.compile("\(\d+\.\d+\) can\d+ (\w+)#(\w+)")
+    regx2 = re.compile("\((\d+\.\d+)\) can\d+ (\w+)#(\w+)")
     mobj = re.match(regx1, line)
     if (mobj):
         can_id = mobj.group(1)
@@ -71,8 +73,10 @@ def procLine(line, dbcon):
     else:
         mobj = re.match(regx2, line)
         if (mobj):
-            can_id = mobj.group(1)
-            can_data = mobj.group(2)
+            epoch_ts = mobj.group(1)
+            has_time = True
+            can_id = mobj.group(2)
+            can_data = mobj.group(3)
             can_data = " ".join(can_data[i:i+2] for i in range(0, len(can_data), 2))
 
     if can_id and can_data:
@@ -82,8 +86,13 @@ def procLine(line, dbcon):
         return None
 
     if len(can_id) != 8:
-        print("ERROR - Invalid CAN ID [" + line + "]")
-        return False
+        ## Check if can_id is 7 characters long. If CAN ID starts with 0, candump 
+        ## seems to drop the 0. Let's add it in that case.
+        if len(can_id) == 7:
+            can_id = "0" + can_id
+        else:
+            print("ERROR - Invalid CAN ID [" + line + "]")
+            return False
 
     pri_r_dp = can_id[0:2]
     ival = int(pri_r_dp, 16)
@@ -92,6 +101,9 @@ def procLine(line, dbcon):
             + "not '00' is currently unsupported!"
         print(msg)
         return False
+
+    if oformat:
+        print("Epoch Timestamp,PGN,Dest Add,Source Add,SPN,Value,Unit")
 
     # Check and see if PDU1 or PDU2 format
     pgn_b1 = can_id[2:4]
@@ -141,15 +153,22 @@ def procLine(line, dbcon):
             dbcur.close()
             return None
 
-    print("%12s: %s\n" % ("Raw CAN msg", line.strip()))
-    print("%12s: %s (%s)" % ("PGN", label, pgn))
-    print("%12s: %s" % ("Acronym", acronym))
-    cmd = prg_nm + " -p " + str(pgn)
-    print("%12s: %s" % ("PGN Details", cmd))
-    print("%12s: %s (%d)" % ("Source Add", source, sa))
-    if dest_add:
-        print("%12s: %s (%d)" % ("Dest Add", dest, dest_add))
-    print("\n")
+    if oformat:
+        if not dest_add:
+            dest_add = 255
+
+        pgn_part = epoch_ts + "," + str(pgn) + "," + str(dest_add) + ","\
+                 + str(sa)
+    else:
+        print("%12s: %s\n" % ("Raw CAN msg", line.strip()))
+        print("%12s: %s (%s)" % ("PGN", label, pgn))
+        print("%12s: %s" % ("Acronym", acronym))
+        cmd = prg_nm + " -p " + str(pgn)
+        print("%12s: %s" % ("PGN Details", cmd))
+        print("%12s: %s (%d)" % ("Source Add", source, sa))
+        if dest_add:
+            print("%12s: %s (%d)" % ("Dest Add", dest, dest_add))
+        print("\n")
 
     q = ""\
       + "select "\
@@ -171,9 +190,13 @@ def procLine(line, dbcon):
     dbcur.execute(q, (pgn,))
     for i in dbcur:
 
+        spn_part = ""
         if not i[2]:
-            # Skip if SPN is NULL
-            print("%12s: %s" % ("SPN", "NULL"))
+            if oformat:
+                spn_part += ","
+            else:
+                # Skip if SPN is NULL
+                print("%12s: %s" % ("SPN", "NULL"))
             continue
 
         # Skip if byte number is greater than length of CAN
@@ -189,7 +212,11 @@ def procLine(line, dbcon):
         blen = i[3]
         bstart = i[4] - 1
         
-        print("%12s: %s (%s)" % ("SPN", i[0], i[1]))
+        if oformat:
+            spn_part += "," + str(i[1])
+        else:
+            print("%12s: %s (%s)" % ("SPN", i[0], i[1]))
+
         if blen <= 8:
             # Convert byte in CAN data message to decimal and then to binary
             val = int(data_l[bnum], 16)
@@ -202,11 +229,18 @@ def procLine(line, dbcon):
             val = val * i[5]
             val = val + i[6]
             unit = i[7]
-            print("%12s: %sb (%s, %d)" % ("Binary Val", bval, hex(int(bval, 2)), int(bval, 2)))
-            if len(unit) == 0:
-                print("%12s: %0.2f" % ("Value", val))
+            if oformat:
+                spn_part += "," + ("%0.2f" % val)
+                if len(unit) == 0:
+                    spn_part += "," + unit
+                else:
+                    spn_part += ","
             else:
-                print("%12s: %0.2f (%s)" % ("Value", val, unit))
+                print("%12s: %sb (%s, %d)" % ("Binary Val", bval, hex(int(bval, 2)), int(bval, 2)))
+                if len(unit) == 0:
+                    print("%12s: %0.2f" % ("Value", val))
+                else:
+                    print("%12s: %0.2f (%s)" % ("Value", val, unit))
         else:
             # Check and see if bit length is > 8 and a multiple of 8. If so, proceed.
             mod_val = blen % 8
@@ -222,15 +256,26 @@ def procLine(line, dbcon):
                 val = val * i[5]
                 val = val + i[6]
                 unit = i[7]
-                print("%12s: 0x%s (%d)" % ("Hex Val", hexv, int(hexv, 16)))
-                if len(unit) == 0:
-                    print("%12s: %0.2f" % ("Value", val))
-                else:
-                    print("%12s: %0.2f (%s)" % ("Value", val, unit))
 
-        cmd = prg_nm + " -p " + str(pgn) + " -s " + str(i[1])
-        print("%12s: %s" % ("Details", cmd))
-        print("\n")
+                if oformat:
+                    spn_part += "," + ("%0.2f" % val)
+                    if len(unit) == 0:
+                        spn_part += ","
+                    else:
+                        spn_part += "," + unit
+                else:
+                    print("%12s: 0x%s (%d)" % ("Hex Val", hexv, int(hexv, 16)))
+                    if len(unit) == 0:
+                        print("%12s: %0.2f" % ("Value", val))
+                    else:
+                        print("%12s: %0.2f (%s)" % ("Value", val, unit))
+
+        if oformat:
+            print(pgn_part + spn_part)
+        else:
+            cmd = prg_nm + " -p " + str(pgn) + " -s " + str(i[1])
+            print("%12s: %s" % ("Details", cmd))
+            print("\n")
 
     dbcur.close()
 
@@ -366,13 +411,14 @@ ifo     = None
 pgn_num = None
 spn_num = None
 src_add = None
+oformat = None
 
 if len(sys.argv) == 1:
     usage()
     sys.exit(0)
 
 try:
-    (opts, args) = getopt.getopt(sys.argv[1:], "a:i:d:p:s:")
+    (opts, args) = getopt.getopt(sys.argv[1:], "a:d:f:i:p:s:")
 except getopt.GetoptError as e:
     print("ERROR - getopt() [" + str(e) + "]")
     usage()
@@ -381,6 +427,8 @@ except getopt.GetoptError as e:
 for (k,v) in opts:
     if k == "-a":
         src_add = v
+    elif k == "-f":
+        oformat = v
     elif k == "-i":
         if v == "-":
             ifo = sys.stdin
@@ -397,6 +445,11 @@ if not dbfile:
     dbfile = DB_FILE
     if not os.path.exists(dbfile):
         print("ERROR - " + dbfile + ": Not found!")
+        sys.exit(1)
+
+if oformat:
+    if oformat not in ["csv"]:
+        print("ERROR - Only CSV output format supported at this time!")
         sys.exit(1)
 
 # Open DB file
@@ -423,11 +476,14 @@ try:
     if ifo:
         for n,line in enumerate(ifo, 1):
             line = line.rstrip()
-            print("\n\n===Begin CAN message #" + str(n) + "===\n")
-            procLine(line, dbcon)
-            print("===End CAN message #" + str(n) + "===\n\n")
+            if not oformat:
+                print("\n\n===Begin CAN message #" + str(n) + "===\n")
+            procLine(line, dbcon, oformat)
+
+            if not oformat:
+                print("===End CAN message #" + str(n) + "===\n\n")
     else:
-        procLine(args[0], dbcon)
+        procLine(args[0], dbcon, oformat)
 
 except sqlite3.DatabaseError as e:
     print("ERROR - DB Exception [" + str(e) + "]")
