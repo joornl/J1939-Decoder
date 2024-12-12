@@ -51,7 +51,10 @@ jjd.py is ready for use now. Simply running like so:
 will display syntax and examples of usage.
 
 
-
+\
+\
+---
+\
 # CAN ID Decoder
 Give a CAN ID, like 0C0A002A, the `jcd.py` script will decode that ID into comma-separated values, one line for each SPN, like so:
 
@@ -66,4 +69,4 @@ Give a CAN ID, like 0C0A002A, the `jcd.py` script will decode that ID into comma
 	0C0A002A,Cruise Control / Vehicle Speed 2 (2560),CCVS2,GLOBAL (255),Headway Controller (42),Remote Vehicle Speed Limit Request (9569)
 
 ## DEPENDENCIES
-    `jcd.py` also depends on the "J1939 Digital Annex" spreadsheet files from SAE (Society of Automotive Engineers).
+`jcd.py` also depends on the "J1939 Digital Annex" spreadsheet files from SAE (Society of Automotive Engineers).
