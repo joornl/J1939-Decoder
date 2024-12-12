@@ -50,3 +50,20 @@ jjd.py is ready for use now. Simply running like so:
       `$ ./jjd.py`
 will display syntax and examples of usage.
 
+
+
+# CAN ID Decoder
+Give a CAN ID, like 0C0A002A, the `jcd.py` script will decode that ID into comma-separated values, one line for each SPN, like so:
+
+	CAN ID,PGN,Acronym,Dest Add,Source Add,SPN
+	0C0A002A,Cruise Control / Vehicle Speed 2 (2560),CCVS2,GLOBAL (255),Headway Controller (42),Cruise Control Disable Command (5603)
+	0C0A002A,Cruise Control / Vehicle Speed 2 (2560),CCVS2,GLOBAL (255),Headway Controller (42),Cruise Control Resume Command (5604)
+	0C0A002A,Cruise Control / Vehicle Speed 2 (2560),CCVS2,GLOBAL (255),Headway Controller (42),Cruise Control Pause Command (5605)
+	0C0A002A,Cruise Control / Vehicle Speed 2 (2560),CCVS2,GLOBAL (255),Headway Controller (42),Cruise Control Set Command (9843)
+	0C0A002A,Cruise Control / Vehicle Speed 2 (2560),CCVS2,GLOBAL (255),Headway Controller (42),Idle Speed Request (8438)
+	0C0A002A,Cruise Control / Vehicle Speed 2 (2560),CCVS2,GLOBAL (255),Headway Controller (42),Idle Control Enable State (8439)
+	0C0A002A,Cruise Control / Vehicle Speed 2 (2560),CCVS2,GLOBAL (255),Headway Controller (42),Idle Control Request Activation (8440)
+	0C0A002A,Cruise Control / Vehicle Speed 2 (2560),CCVS2,GLOBAL (255),Headway Controller (42),Remote Vehicle Speed Limit Request (9569)
+
+## DEPENDENCIES
+    `jcd.py` also depends on the "J1939 Digital Annex" spreadsheet files from SAE (Society of Automotive Engineers).
