@@ -9,7 +9,7 @@ import sqlite3
 # Globals
 #
 DB_FILE="j1939da-pgn-spn-oct22.db"
-VERSION="20240919.00"
+VERSION="20241223.00"
 
 #
 # Subroutines
@@ -220,11 +220,14 @@ def procLine(line, dbcon, oformat):
         if blen <= 8:
             # Convert byte in CAN data message to decimal and then to binary
             val = int(data_l[bnum], 16)
-            bval = format(val, '#010b')
+            bval = format(val, '08b')
 
-            # Strip the leading "0b"
-            bval = bval[2:]
-            bval = bval[bstart:(bstart + blen)]
+            # Since bit position in a byte are counted from right to left, 
+            # we have to do some tricky math to extract the value
+            end = 8 - bstart
+            start = end - blen
+
+            bval = bval[start:end]
             val = int(bval, 2)
             val = val * i[5]
             val = val + i[6]
